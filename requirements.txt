@@ -1,0 +1,11 @@
+faiss-cpu
+sentence-transformers
+langchain
+langchain-community
+langchain-huggingface
+langchain-core
+ultralytics
+opencv-python
+anthropic
+groq
+python-dotenv
