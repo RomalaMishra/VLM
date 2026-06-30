@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+.env/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+
+# Training outputs
+outputs/checkpoints/
+outputs/tensorboard/
+outputs/best/
+outputs/eval_logs/
+outputs/*.zip
+outputs/result_*.jpg
+!outputs/.gitkeep
+
+# HuggingFace cache
+.cache/
+
+# Secrets
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
