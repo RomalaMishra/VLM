@@ -56,20 +56,3 @@ python -m rl.evaluate --model outputs/ppo_bench_final --episodes 20 --render
 ```bash
 python main.py --model outputs/ppo_bench_final --goal bench --render
 ```
-
-## Project Layout
-v2/
-├── env/
-│   └── nav_env.py      
-├── vision/
-│   └── detector.py   
-├── perception/
-│   └── depth.py         
-├── rl/
-│   ├── train.py       
-│   └── evaluate.py      
-├── outputs/            
-├── main.py              
-├── requirements.txt
-├── .env.example         
-└── README.md
