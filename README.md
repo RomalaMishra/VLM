@@ -86,3 +86,134 @@ Guidance text
 - No spatial reasoning — bounding box positions not used
 - Text output only — no real-time interaction or replanning
 - Knowledge base limited to 15 COCO-class objects
+
+---
+
+### v2 — Navigation Baseline
+**Branch:** [`v2`](../../tree/v2) · **Author:** Sree-harsh
+
+Extends the v1 perception pipeline into a full simulation loop. A robot navigates
+an outdoor-like MiniWorld environment using only RGB camera input, trained with
+Proximal Policy Optimisation (PPO). Introduces structured visual observation,
+goal-conditioned navigation, and monocular depth estimation — laying the foundation
+for VLM integration in v3.
+
+```
+Simulator RGB Frame
+      |
+      v
+YOLOv8n  detect_frame()   ←  adapted from v1 (numpy array input)
+      |
+      v
+Depth Anything V2 Small   (monocular depth → near / mid / far bins)
+      |
+      v
+Structured Observation
+{ image: (H,W,3),  goal: one-hot (4,) }
+      |
+      v
+PPO Policy  (stable-baselines3 MultiInputPolicy)
+      |
+      v
+Action: turn_left | turn_right | move_forward
+      |
+      v
+MiniWorld Simulator  (OutdoorNavEnv)
+```
+
+**Environment design**
+
+| Property | Value |
+|----------|-------|
+| Simulator | MiniWorld (Farama Foundation) |
+| Scene | Open flat room, 16×16 m |
+| Goal objects | bench · tree · cone · barrier (coloured boxes) |
+| Obstacles | 4 grey boxes, random positions each episode (L1 dynamic) |
+| Reach condition | Distance < 1.2 m |
+| Reward | +5.0 at goal · (Δdist × 2.0) − 0.002 per step |
+| Max steps | 500 per episode |
+
+**RL training**
+
+| Hyperparameter | Value |
+|---------------|-------|
+| Algorithm | PPO |
+| Policy | MultiInputPolicy (CNN + MLP) |
+| Learning rate | 3 × 10⁻⁴ |
+| Steps per update | 512 per env |
+| Batch size | 64 |
+| Entropy coefficient | 0.01 |
+
+**What transfers from v1:** `detect_frame()` wraps the v1 YOLO pipeline to accept
+numpy arrays directly from the simulator. The RAG knowledge base and Groq chain
+are extended in v3.
+
+---
+
+### v3 — VLM Integration + Real-Time Q&A *(planned)*
+**Author:** Sree-harsh
+
+Connects the v2 navigation stack to a Vision Language Model running asynchronously
+alongside the PPO policy. The VLM operates at ~0.5 Hz in a background thread;
+the policy runs at ~10 Hz uninterrupted.
+
+**New in v3**
+- Groq vision endpoint replaces text-only chain — VLM receives the actual camera frame
+- Natural language goal input: *"Go to the bench"* → VLM extracts goal label → policy navigates
+- Real-time Q&A terminal: user types freely while the robot keeps moving
+- L2 dynamic obstacles — one or two objects move on fixed paths each episode
+- Knowledge base extended with outdoor object classes
+
+**Q&A architecture**
+
+```
+Main thread     PPO control loop           ~10 Hz
+Input thread    waits for user text  →  query queue
+VLM thread      reads queue  →  Groq vision call  →  response queue
+Display thread  prints responses
+```
+
+Two query types:
+- **Command** — *"Go to the tree"* → updates shared goal state immediately
+- **Query** — *"Why did you stop?"* → VLM answers from current frame + scene state
+
+---
+
+### v4 — Full Research System *(planned)*
+**Authors:** RomalaMishra · Sree-harsh
+
+The complete pipeline. Ablation study comparing PPO-only vs PPO+VLM across
+success rate, steps-to-goal, and response to language. Demo video with bounding
+boxes, scene state overlay, VLM explanations, and action labels.
+
+**Research claim:** *The VLM layer adds goal generalisation, dynamic replanning,
+and interpretability that no standalone RL policy can provide.*
+
+---
+
+## Branch Guide
+
+| Branch | Content | Author |
+|--------|---------|--------|
+| `main` | Project overview and roadmap | RomalaMishra · Sree-harsh |
+| `v1` | AI Accessibility Assistant | RomalaMishra |
+| `v2` | Navigation Baseline (PPO + MiniWorld) | Sree-harsh |
+| `v3` | VLM Integration + Q&A *(coming)* | Sree-harsh |
+| `v4` | Full Research System *(coming)* | RomalaMishra · Sree-harsh |
+
+---
+
+## Setup
+
+Each version is self-contained. Navigate to the branch and follow its own README.
+
+```bash
+# v1
+git checkout v1
+pip install -r requirements.txt
+
+# v2
+git checkout v2
+pip install -r requirements.txt
+python -m rl.train --goal bench
+```
